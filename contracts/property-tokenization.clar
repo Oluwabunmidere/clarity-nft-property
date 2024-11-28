@@ -63,6 +63,17 @@
 (define-map property-location uint (string-ascii 100))
 ;; Property Location Tracking
 
+(define-map property-value uint uint)
+
+(define-map property-insurance uint bool)
+
+(define-map property-insurance-provider uint (string-ascii 50))
+
+(define-map property-maintenance-log 
+    {property-id: uint, maintenance-id: uint} 
+    {description: (string-ascii 256), date: uint})
+
+
 ;; -------------------------------
 ;; Private Helper Functions
 ;; -------------------------------
@@ -158,6 +169,23 @@
         (asserts! (is-property-owner property-id tx-sender) err-not-property-owner)
         (map-set property-listing property-id false)
         (ok true)))
+
+(define-public (set-property-category (property-id uint) (category (string-ascii 50)))
+;; Assigns a category to a property
+(begin
+    (asserts! (is-property-owner property-id tx-sender) err-not-property-owner)
+    (asserts! (>= (len category) u1) err-invalid-property-data)
+    (map-set property-category property-id category)
+    (ok true)))
+
+(define-public (set-property-location (property-id uint) (location (string-ascii 100)))
+;; Sets the location details for a property
+(begin
+    (asserts! (is-property-owner property-id tx-sender) err-not-property-owner)
+    (asserts! (>= (len location) u1) err-invalid-property-data)
+    (map-set property-location property-id location)
+    (ok true)))
+
 ;; -------------------------------
 ;; Read-Only Functions
 ;; -------------------------------
@@ -331,6 +359,31 @@
 (define-read-only (is-property-listed (property-id uint))
 ;; Checks if a property is currently listed
 (ok (default-to false (map-get? property-listing property-id))))
+
+(define-read-only (get-property-category (property-id uint))
+;; Retrieves the category of a property
+(ok (map-get? property-category property-id)))
+
+(define-read-only (get-property-location (property-id uint))
+;; Retrieves the location of a property
+(ok (map-get? property-location property-id)))
+
+(define-read-only (get-property-value (property-id uint))
+;; Retrieves the market value of a property
+(ok (map-get? property-value property-id)))
+
+(define-read-only (is-property-insured (property-id uint))
+    ;; Checks if a property is insured
+    (ok (default-to false (map-get? property-insurance property-id))))
+
+(define-read-only (get-property-insurance-provider (property-id uint))
+    ;; Retrieves the insurance provider for a property
+    (ok (map-get? property-insurance-provider property-id)))
+
+(define-read-only (get-maintenance-log (property-id uint) (maintenance-id uint))
+;; Retrieves a specific maintenance log entry
+(ok (map-get? property-maintenance-log 
+    {property-id: property-id, maintenance-id: maintenance-id})))
 
 ;; -------------------------------
 ;; Contract Initialization
