@@ -54,6 +54,15 @@
 (define-map transferred-properties uint bool) 
 ;; Tracks whether a property has been transferred, mapped by property ID.
 
+(define-map property-listing uint bool)
+;; Property Listing Status
+
+(define-map property-category uint (string-ascii 50))
+;; Property Category Management
+
+(define-map property-location uint (string-ascii 100))
+;; Property Location Tracking
+
 ;; -------------------------------
 ;; Private Helper Functions
 ;; -------------------------------
@@ -136,6 +145,19 @@
         (map register-property property-details)))
         (ok registration-results))))
 
+(define-public (list-property (property-id uint))
+    ;; Marks a property as listed for sale
+    (begin
+        (asserts! (is-property-owner property-id tx-sender) err-not-property-owner)
+        (map-set property-listing property-id true)
+        (ok true)))
+
+(define-public (delist-property (property-id uint))
+    ;; Removes a property from being listed
+    (begin
+        (asserts! (is-property-owner property-id tx-sender) err-not-property-owner)
+        (map-set property-listing property-id false)
+        (ok true)))
 ;; -------------------------------
 ;; Read-Only Functions
 ;; -------------------------------
@@ -278,6 +300,37 @@
 (define-read-only (can-transfer (property-id uint))
 ;; Checks if property is eligible for transfer
 (ok (not (default-to false (map-get? transferred-properties property-id)))))
+
+(define-read-only (get-data-length (property-id uint))
+;; Returns length of property data
+(ok (len (unwrap! (map-get? property-data property-id) err-property-not-found))))
+
+(define-read-only (get-last-property)
+;; Returns the last assigned property ID
+(ok (var-get last-property-id)))
+
+(define-read-only (fetch-property-details (property-id uint))
+;; Retrieves basic property details
+(ok (map-get? property-data property-id)))
+
+(define-read-only (is-valid-property-range (start-id uint) (end-id uint))
+;; Validates a range of property IDs
+(ok (and 
+    (>= start-id u1) 
+    (<= end-id (var-get last-property-id))
+    (<= start-id end-id))))
+
+(define-read-only (is-property-owned (property-id uint))
+;; Checks if a property has an owner
+(ok (is-some (map-get? property-owners property-id))))
+
+(define-read-only (get-next-property-id)
+;; Returns the next available property ID
+(ok (+ (var-get last-property-id) u1)))
+
+(define-read-only (is-property-listed (property-id uint))
+;; Checks if a property is currently listed
+(ok (default-to false (map-get? property-listing property-id))))
 
 ;; -------------------------------
 ;; Contract Initialization
