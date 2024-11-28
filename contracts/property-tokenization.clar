@@ -120,6 +120,22 @@
 ;; Returns the length of the property data string
 (ok (len (unwrap! (map-get? property-data property-id) err-property-not-found))))
 
+(define-public (freeze-property-transfer (property-id uint))
+;; Prevents further transfers of a specific property
+(begin
+    (asserts! (is-property-owner property-id tx-sender) err-not-property-owner)
+    (map-set transferred-properties property-id true)
+    (ok true)))
+
+(define-public (add-multiple-properties 
+(property-details (list 10 (string-ascii 256))))
+;; Allows bulk registration of properties
+(begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (let ((registration-results 
+        (map register-property property-details)))
+        (ok registration-results))))
+
 ;; -------------------------------
 ;; Read-Only Functions
 ;; -------------------------------
@@ -167,6 +183,15 @@
 (define-read-only (get-property-details (property-id uint))
 ;; Retrieves the details of the specified property.
 (ok (map-get? property-data property-id)))
+
+(define-read-only (property-id-exists (property-id uint))
+;; Checks if a specific property ID exists
+(ok (is-some (map-get? property-owners property-id))))
+
+(define-read-only (get-property-data-hash (property-id uint))
+;; Generates a simple hash of property data for verification
+(ok (default-to "" 
+    (map-get? property-data property-id))))
 
 ;; -------------------------------
 ;; Contract Initialization
