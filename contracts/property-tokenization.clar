@@ -1,4 +1,4 @@
-;;;; Contract File Name: property-tokenization.clar
+;; Contract File Name: property-tokenization.clar
 ;; Description: Real Estate Property Management Contract
 ;; This contract handles the tokenization of real estate properties using NFTs.
 ;; It includes features for property registration, ownership management, data validation, and property transfer.
@@ -77,3 +77,56 @@
         (map-set property-owners property-id tx-sender)
         (var-set last-property-id property-id)
         (ok property-id)))
+
+;; -------------------------------
+;; Public Functions
+;; -------------------------------
+
+(define-public (add-property (property-details (string-ascii 256)))
+    ;; Allows the contract owner to add a new property with valid details.
+    (begin
+        (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+        (asserts! (is-valid-property-data property-details) err-invalid-property-data)
+        (register-property property-details)))
+
+(define-public (transfer-property (property-id uint) (recipient principal))
+    ;; Transfers ownership of a property to a specified recipient.
+    (begin
+        (let ((property-owner (unwrap! (map-get? property-owners property-id) err-property-not-found)))
+            (asserts! (is-eq tx-sender property-owner) err-not-property-owner)
+
+            (let ((is-transferred (default-to false (map-get? transferred-properties property-id))))
+                (asserts! (not is-transferred) err-already-transferred))
+
+            (asserts! (is-eq recipient recipient) err-transfer-failed)
+            (map-set property-owners property-id recipient)
+            (map-set transferred-properties property-id true)
+            (ok true))))
+
+(define-public (get-property-owner (property-id uint))
+    ;; Retrieves the current owner's principal address for a given property ID.
+    (ok (map-get? property-owners property-id)))
+
+(define-public (get-property-data (property-id uint))
+    ;; Retrieves the stored data for a specified property ID.
+    (ok (map-get? property-data property-id)))
+
+;; -------------------------------
+;; Read-Only Functions
+;; -------------------------------
+
+(define-read-only (is-transferred (property-id uint))
+    ;; Checks if a property has already been transferred.
+    (ok (default-to false (map-get? transferred-properties property-id))))
+
+(define-read-only (get-last-property-id)
+    ;; Retrieves the last assigned property ID.
+    (ok (var-get last-property-id)))
+
+;; -------------------------------
+;; Contract Initialization
+;; -------------------------------
+
+(begin
+    ;; Initialize the last property ID to 0 during deployment.
+    (var-set last-property-id u0))
