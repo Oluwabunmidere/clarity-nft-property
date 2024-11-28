@@ -232,6 +232,53 @@
 (define-read-only (is-last-property (property-id uint))
 ;; Checks if the given ID is the last property
 (ok (is-eq property-id (var-get last-property-id))))
+
+(define-read-only (fetch-property-data (property-id uint))
+;; Retrieves basic property data
+(ok (map-get? property-data property-id)))
+
+(define-read-only (validate-property (property-id uint))
+;; Basic validation of a property
+(ok (and 
+    (is-some (map-get? property-owners property-id))
+    (is-some (map-get? property-data property-id)))))
+
+(define-read-only (validate-property-id (property-id uint))
+;; Checks if property ID is within valid range
+(ok (and (>= property-id u1) (<= property-id (var-get last-property-id)))))
+
+(define-read-only (is-property-transferred (property-id uint))
+;; Checks if property has been transferred
+(ok (default-to false (map-get? transferred-properties property-id))))
+
+(define-read-only (get-property-info (property-id uint))
+;; Retrieves basic property information
+(ok (map-get? property-data property-id)))
+
+(define-read-only (lookup-owner (property-id uint))
+;; Simple owner lookup function
+(ok (map-get? property-owners property-id)))
+
+(define-read-only (check-property-exists (property-id uint))
+;; Verifies if a property exists
+(ok (is-some (map-get? property-owners property-id))))
+
+(define-read-only (property-count)
+;; Returns the total number of properties
+(ok (var-get last-property-id)))
+
+(define-read-only (is-valid-data-length (data (string-ascii 256)))
+;; Checks if property data length is valid
+(ok (and (>= (len data) u1) (<= (len data) u256))))
+
+(define-read-only (get-first-property)
+;; Returns the first property ID
+(ok u1))
+
+(define-read-only (can-transfer (property-id uint))
+;; Checks if property is eligible for transfer
+(ok (not (default-to false (map-get? transferred-properties property-id)))))
+
 ;; -------------------------------
 ;; Contract Initialization
 ;; -------------------------------
