@@ -111,6 +111,15 @@
     ;; Retrieves the stored data for a specified property ID.
     (ok (map-get? property-data property-id)))
 
+(define-public (validate-property-owner (property-id uint) (claimed-owner principal))
+;; Validates if the claimed owner matches the actual property owner
+(let ((actual-owner (unwrap! (map-get? property-owners property-id) err-property-not-found)))
+    (ok (is-eq actual-owner claimed-owner))))
+
+(define-public (get-property-data-length (property-id uint))
+;; Returns the length of the property data string
+(ok (len (unwrap! (map-get? property-data property-id) err-property-not-found))))
+
 ;; -------------------------------
 ;; Read-Only Functions
 ;; -------------------------------
@@ -122,6 +131,42 @@
 (define-read-only (get-last-property-id)
     ;; Retrieves the last assigned property ID.
     (ok (var-get last-property-id)))
+
+(define-read-only (check-property-transferred (property-id uint))
+;; Checks if a property has been transferred or not.
+(ok (default-to false (map-get? transferred-properties property-id))))
+
+(define-read-only (get-total-properties)
+;; Returns the total number of properties that have been registered.
+(ok (var-get last-property-id)))
+
+(define-read-only (is-property-exists (property-id uint))
+;; Checks if a property with the given ID exists.
+(ok (is-none (map-get? property-owners property-id))))
+
+(define-read-only (can-transfer-property (property-id uint))
+;; Checks if a property is eligible for transfer (i.e., has not been transferred already).
+(ok (not (default-to false (map-get? transferred-properties property-id)))))
+
+(define-read-only (is-property-registered (property-id uint))
+;; Checks if the property ID exists and is registered in the contract.
+(ok (is-some (map-get? property-owners property-id))))
+
+(define-read-only (get-property-transfer-status (property-id uint))
+;; Returns the transfer status of a specific property.
+(ok (default-to false (map-get? transferred-properties property-id))))
+
+(define-read-only (get-owner (property-id uint))
+;; Retrieves the owner's address for the given property ID.
+(ok (map-get? property-owners property-id)))
+
+(define-read-only (is-property-transferable (property-id uint))
+;; Checks if a property can be transferred (not already transferred).
+(ok (not (default-to false (map-get? transferred-properties property-id)))))
+
+(define-read-only (get-property-details (property-id uint))
+;; Retrieves the details of the specified property.
+(ok (map-get? property-data property-id)))
 
 ;; -------------------------------
 ;; Contract Initialization
