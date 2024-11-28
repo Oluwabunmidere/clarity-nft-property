@@ -64,15 +64,38 @@
 ;; Property Location Tracking
 
 (define-map property-value uint uint)
+;; Property Value Tracking
 
 (define-map property-insurance uint bool)
-
 (define-map property-insurance-provider uint (string-ascii 50))
+;; Property Insurance Tracking
 
 (define-map property-maintenance-log 
     {property-id: uint, maintenance-id: uint} 
     {description: (string-ascii 256), date: uint})
+;; Property Maintenance Log
 
+(define-map property-tax uint uint)
+;; Property Tax Information
+
+(define-map property-occupancy uint bool)
+;; Property Occupancy Status
+
+(define-map property-zoning uint (string-ascii 50))
+;; Property Zoning Information
+
+(define-map transfer-approvals 
+    {property-id: uint, approved-address: principal} 
+    bool)
+;; Property Ownership Transfer Approval
+
+(define-map property-age uint uint)
+;; Property Age Tracking
+
+(define-map property-appraisal 
+    {property-id: uint, appraisal-date: uint} 
+    uint)
+;; Property Appraisal Tracking
 
 ;; -------------------------------
 ;; Private Helper Functions
@@ -185,6 +208,10 @@
     (asserts! (>= (len location) u1) err-invalid-property-data)
     (map-set property-location property-id location)
     (ok true)))
+
+
+
+
 
 ;; -------------------------------
 ;; Read-Only Functions
@@ -385,6 +412,37 @@
 (ok (map-get? property-maintenance-log 
     {property-id: property-id, maintenance-id: maintenance-id})))
 
+(define-read-only (get-property-tax (property-id uint))
+    ;; Retrieves the tax amount for a property
+    (ok (map-get? property-tax property-id)))
+
+(define-read-only (is-property-occupied (property-id uint))
+    ;; Checks if a property is currently occupied
+    (ok (default-to false (map-get? property-occupancy property-id))))
+
+(define-read-only (get-property-zoning (property-id uint))
+    ;; Retrieves the zoning classification of a property
+    (ok (map-get? property-zoning property-id)))
+
+(define-read-only (is-transfer-approved (property-id uint) (approved-address principal))
+    ;; Checks if a transfer to a specific address is approved
+    (ok (default-to false 
+        (map-get? transfer-approvals 
+            {property-id: property-id, approved-address: approved-address}))))
+
+(define-read-only (get-property-age (property-id uint))
+    ;; Calculates and returns the age of a property
+    (let ((current-year u2024)
+          (construction-year (unwrap! (map-get? property-age property-id) err-property-not-found)))
+        (ok (- current-year construction-year))))
+
+(define-read-only (get-latest-appraisal (property-id uint))
+    ;; Retrieves the most recent appraisal value
+    (ok (map-get? property-appraisal 
+        {property-id: property-id, appraisal-date: block-height})))
+
+
+
 ;; -------------------------------
 ;; Contract Initialization
 ;; -------------------------------
@@ -392,3 +450,4 @@
 (begin
     ;; Initialize the last property ID to 0 during deployment.
     (var-set last-property-id u0))
+
